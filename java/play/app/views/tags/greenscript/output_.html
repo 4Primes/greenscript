@@ -1,6 +1,6 @@
 #{if !_sm.isDefault(_browser)}<!--[if ${_browser}]>#{/if}
 #{list items: _sm.output(_nameList, _withDeps, _all, _media, _browser), as: 'url'} #{if _type=='css'}
-<link rel="stylesheet" type="text/css" media="${_media?:'all'}" href="${url}"/> #{/if} #{else} <script type="text/javascript" src="${url}" #{if _id}id="${_id}"#{/if} #{if _charset}charset="${_charset}"#{/if}></script> #{/else}#{/list}
+<link rel="stylesheet" type="text/css" media="${_media?:'all'}" href="${url}?v${play.configuration.getProperty('application.version','1.0')}"/> #{/if} #{else} <script type="text/javascript" src="${url}?v${play.configuration.getProperty('application.version','1.0')}" #{if _id}id="${_id}"#{/if} #{if _charset}charset="${_charset}"#{/if}></script> #{/else}#{/list}
 #{if !_sm.isDefault(_browser)}
 <![endif]-->
 #{/if}

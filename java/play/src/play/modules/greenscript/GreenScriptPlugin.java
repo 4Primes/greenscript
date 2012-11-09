@@ -3,7 +3,6 @@ package play.modules.greenscript;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -36,9 +35,9 @@ import play.mvc.Http.Request;
 import play.mvc.Http.Response;
 import play.mvc.Router;
 import play.mvc.Scope.Flash;
-import play.templates.Template;
 import play.mvc.results.NotFound;
 import play.mvc.results.RenderStatic;
+import play.templates.Template;
 import play.utils.Utils;
 import play.vfs.VirtualFile;
 
@@ -57,52 +56,47 @@ import com.greenscriptool.utils.IBufferLocator;
 
 /**
  * Define a Playframework plugin
- *
+ * 
  * @author greenlaw110@gmail.com
- * @version 1.2.9 2012-06-05
- *          fix bug: https://github.com/greenlaw110/greenscript/issues/50
- *          Support configure js compressor
- * @version 1.2.8 2012-02-16
- *          fix bug: https://github.com/greenlaw110/greenscript/issues/36
- *          support coffeescript
- *          use google closure to compress javascript resource
- * @version 1.2.7 2012-01-31
- *          fix bug: https://github.com/greenlaw110/greenscript/issues/30
- *          Add tags for rythm engine
- * @version 1.2.6, 2011-09-04
- *          support LESS,
- *          fix bug: https://github.com/greenlaw110/greenscript/issues/18
- *          fix bug: https://github.com/greenlaw110/greenscript/issues/19
- *          fix bug: https://github.com/greenlaw110/greenscript/issues/21
- *          fix bug: https://github.com/greenlaw110/greenscript/issues/22
- *          fix bug: https://github.com/greenlaw110/greenscript/issues/23
- *          fix bug: https://github.com/greenlaw110/greenscript/issues/24
- *          fix bug: https://github.com/greenlaw110/greenscript/issues/27
- * @version 1.2.5, 2011-08-07
- *          support in-memory cache
- * @version 1.2.1, 2011-01-20
- *           1. support reverse dependency declaration, e.g:
- *           * js.jquery-1.4.4-=jquery-ui.1.8.7,jquery.tmpl
+ * @version 1.2.9 2012-06-05 fix bug:
+ *          https://github.com/greenlaw110/greenscript/issues/50 Support
+ *          configure js compressor
+ * @version 1.2.8 2012-02-16 fix bug:
+ *          https://github.com/greenlaw110/greenscript/issues/36 support
+ *          coffeescript use google closure to compress javascript resource
+ * @version 1.2.7 2012-01-31 fix bug:
+ *          https://github.com/greenlaw110/greenscript/issues/30 Add tags for
+ *          rythm engine
+ * @version 1.2.6, 2011-09-04 support LESS, fix bug:
+ *          https://github.com/greenlaw110/greenscript/issues/18 fix bug:
+ *          https://github.com/greenlaw110/greenscript/issues/19 fix bug:
+ *          https://github.com/greenlaw110/greenscript/issues/21 fix bug:
+ *          https://github.com/greenlaw110/greenscript/issues/22 fix bug:
+ *          https://github.com/greenlaw110/greenscript/issues/23 fix bug:
+ *          https://github.com/greenlaw110/greenscript/issues/24 fix bug:
+ *          https://github.com/greenlaw110/greenscript/issues/27
+ * @version 1.2.5, 2011-08-07 support in-memory cache
+ * @version 1.2.1, 2011-01-20 1. support reverse dependency declaration, e.g: *
+ *          js.jquery-1.4.4-=jquery-ui.1.8.7,jquery.tmpl
  * @version 1.2, 2010-10-16
  */
 public class GreenScriptPlugin extends PlayPlugin {
 
     public static final String VERSION = "1.2.9";
 
-    private static String msg_(String msg, Object... args) {
-        return String.format("GreenScript-" + VERSION + "> %1$s",
-                String.format(msg, args));
+    private static String msg_(final String msg, final Object... args) {
+        return String.format("GreenScript-" + VERSION + "> %1$s", String.format(msg, args));
     }
 
-    private static void info_(String msg, Object... args) {
+    private static void info_(final String msg, final Object... args) {
         Logger.info(msg_(msg, args));
     }
 
-    private static void trace_(String msg, Object... args) {
+    private static void trace_(final String msg, final Object... args) {
         Logger.trace(msg_(msg, args));
     }
 
-    private static void debug_(String msg, Object... args) {
+    private static void debug_(final String msg, final Object... args) {
         Logger.info(msg_(msg, args));
     }
 
@@ -122,7 +116,8 @@ public class GreenScriptPlugin extends PlayPlugin {
 
     public static final String RESOURCES_PARAM = "resources";
 
-    private static Properties defProps_; static {
+    private static Properties defProps_;
+    static {
         defProps_ = new Properties();
         // file paths
         defProps_.put("greenscript.dir.root", "/public");
@@ -149,16 +144,16 @@ public class GreenScriptPlugin extends PlayPlugin {
     }
 
     public GreenScriptPlugin() {
-        //depConf_ = new Properties();
-        minConf_ = new Properties();
-        minConf_.putAll(defProps_);
+        // depConf_ = new Properties();
+        this.minConf_ = new Properties();
+        this.minConf_.putAll(defProps_);
     }
 
     @Override
     public void onLoad() {
         try {
             Class.forName("com.greenlaw110.rythm.play.RythmPlugin");
-            rythmPresented_ = true;
+            this.rythmPresented_ = true;
             debug_("rythm presented");
         } catch (Exception e) {
             // rythm template engine not presented.
@@ -169,47 +164,51 @@ public class GreenScriptPlugin extends PlayPlugin {
     @Override
     public void onConfigurationRead() {
 
-        loadDependencies();
+        this.loadDependencies();
 
-        eTag_ = Play.configuration.getProperty("http.useETag", "true").equalsIgnoreCase("true");
+        this.eTag_ = Play.configuration.getProperty("http.useETag", "true")
+                .equalsIgnoreCase("true");
 
         info_("initialized");
     }
 
     private boolean stopRouteUpdate_ = false;
+
     private synchronized void updateRoute_() {
-        if (inMemoryCache) {
-            String url = cacheUrlPath_();
-            Router.addRoute(0, "GET",
-                    url + "{key}",
-                    "greenscript.Service.getInMemoryCache",
-                    null,
+        if (this.inMemoryCache) {
+            String url = this.cacheUrlPath_();
+            Router.addRoute(0, "GET", url + "{key}", "greenscript.Service.getInMemoryCache", null,
                     null);
-            Logger.debug("route added: %s handled by %s", url + "{key}", "greenscript.Service.getInMemoryCache");
+            Logger.debug("route added: %s handled by %s", url + "{key}",
+                    "greenscript.Service.getInMemoryCache");
         } else {
-            stopRouteUpdate_ = true;
+            this.stopRouteUpdate_ = true;
             Router.load(Play.ctxPath);
-            stopRouteUpdate_ = false;
+            this.stopRouteUpdate_ = false;
         }
     }
 
     /**
      * Moved initialize from onApplicationStart to onRoutersLoaded because
-     * Servlet 2.4 does not allow you to get the context path from the servletcontext...
+     * Servlet 2.4 does not allow you to get the context path from the
+     * servletcontext...
      */
     @Override
     public synchronized void onRoutesLoaded() {
-        if (stopRouteUpdate_) return;
-        InitializeMinimizers();
-        updateRoute_();
+        if (this.stopRouteUpdate_) {
+            return;
+        }
+        this.InitializeMinimizers();
+        this.updateRoute_();
     }
 
     @Override
     public void afterApplicationStart() {
         Properties p = Play.configuration;
-        for (ResourceType type: ResourceType.values()) {
-            final Minimizer m = type == ResourceType.JS ? jsM_ : cssM_;
-            String s = fetchProp_(p, String.format("greenscript%s.cache.check", type.getExtension()));
+        for (ResourceType type : ResourceType.values()) {
+            final Minimizer m = type == ResourceType.JS ? this.jsM_ : this.cssM_;
+            String s = fetchProp_(p,
+                    String.format("greenscript%s.cache.check", type.getExtension()));
             int i = "never".equalsIgnoreCase(s) ? -1 : Time.parseDuration(s);
             if (-1 != i) {
                 Job<Object> j = new Job<Object>() {
@@ -224,7 +223,8 @@ public class GreenScriptPlugin extends PlayPlugin {
     }
 
     /*
-     * provided here to avoid compilation error when Rythm Template Engine is not presented
+     * provided here to avoid compilation error when Rythm Template Engine is
+     * not presented
      */
     private static final Template VOID_RYTHM_TMPL = new Template() {
         @Override
@@ -232,17 +232,22 @@ public class GreenScriptPlugin extends PlayPlugin {
         }
 
         @Override
-        protected String internalRender(Map<String, Object> args) {
+        protected String internalRender(final Map<String, Object> args) {
             return null;
         }
     };
 
     private final Pattern P = Pattern.compile(".*tags.rythm.greenscript.*");
+
     @Override
-    public Template loadTemplate(VirtualFile file) {
-        if (rythmPresented_) return null; // let rythm to handle it
-        if (!file.exists()) return null;
-        if (P.matcher(file.relativePath()).matches()) {
+    public Template loadTemplate(final VirtualFile file) {
+        if (this.rythmPresented_) {
+            return null; // let rythm to handle it
+        }
+        if (!file.exists()) {
+            return null;
+        }
+        if (this.P.matcher(file.relativePath()).matches()) {
             return VOID_RYTHM_TMPL;
         }
         return null;
@@ -250,25 +255,27 @@ public class GreenScriptPlugin extends PlayPlugin {
 
     @Override
     public void onApplicationStop() {
-        cleanUp_();
+        this.cleanUp_();
     }
 
     public String jsDebugString() {
-        return ((DependenceManager)jsD_).debugString();
+        return ((DependenceManager) this.jsD_).debugString();
     }
 
     public String cssDebugString() {
-        return ((DependenceManager)cssD_).debugString();
+        return ((DependenceManager) this.cssD_).debugString();
     }
 
     private static ThreadLocal<IRenderSession> sessJs_ = new ThreadLocal<IRenderSession>();
     private static ThreadLocal<IRenderSession> sessCss_ = new ThreadLocal<IRenderSession>();
 
-    public static IRenderSession session(String type) {
+    public static IRenderSession session(final String type) {
         ResourceType rt = ResourceType.valueOf(type.toUpperCase());
         switch (rt) {
-        case JS: return jsSession();
-        case CSS: return cssSession();
+        case JS:
+            return jsSession();
+        case CSS:
+            return cssSession();
         }
         throw new UnexpectedException("unknown resource type: " + rt.name());
     }
@@ -282,49 +289,56 @@ public class GreenScriptPlugin extends PlayPlugin {
     }
 
     private static class ResourceResolver extends Controller {
-        public static String def(ResourceType type) {
+        public static String def(final ResourceType type) {
             String template = Controller.template();
             String urlPath = resourceUrl_.get(type.getExtension());
-            return null == template ? null : template.replaceFirst("^views/", urlPath).replaceFirst("\\.[\\w]+$", type.getExtension());
+            return null == template ? null : template.replaceFirst("^views/", urlPath)
+                    .replaceFirst("\\.[\\w]+$", type.getExtension());
         }
     }
 
     @Override
-    public void beforeActionInvocation(Method actionMethod) {
-        IRenderSession sess = newSession_(ResourceType.JS);
+    public void beforeActionInvocation(final Method actionMethod) {
+        IRenderSession sess = this.newSession_(ResourceType.JS);
         sessJs_.set(sess);
         /*
-         * Automatically declare js resource
-         * e.g /public/javascripts/Application/index.js
+         * Automatically declare js resource e.g
+         * /public/javascripts/Application/index.js
          */
         String def = ResourceResolver.def(ResourceType.JS);
         sess.declare(def, null, null);
 
-        sess = newSession_(ResourceType.CSS);
+        sess = this.newSession_(ResourceType.CSS);
         sessCss_.set(sess);
         /*
-         * Automatically declare js resource
-         * e.g. /public/stylesheets/Application/index.css
+         * Automatically declare js resource e.g.
+         * /public/stylesheets/Application/index.css
          */
         def = ResourceResolver.def(ResourceType.CSS);
         sess.declare(def, null, null);
     }
 
-
-    //private static YUICompressor jsC_ = new YUICompressor(ResourceType.JS);
-    //private static YUICompressor cssC_ = new YUICompressor(ResourceType.CSS);
+    // private static YUICompressor jsC_ = new YUICompressor(ResourceType.JS);
+    // private static YUICompressor cssC_ = new YUICompressor(ResourceType.CSS);
     @Override
-    public boolean serveStatic(VirtualFile file, Request request, Response response) {
-        if (null == jsM_) {
-            if (Play.mode == Mode.DEV) Play.start();
-            else throw new UnexpectedException("Minimizer not initialized");
+    public boolean serveStatic(final VirtualFile file, final Request request,
+            final Response response) {
+        if (null == this.jsM_) {
+            if (Play.mode == Mode.DEV) {
+                Play.start();
+            } else {
+                throw new UnexpectedException("Minimizer not initialized");
+            }
         }
         String fn = file.getName();
-        if (fn.endsWith(".coffee") || (fn.endsWith(".js") && jsM_.isMinimizeEnabled() && !file.relativePath().startsWith(cacheUrlPath_()))) {
-            return processStatic_(file, request, response, ResourceType.JS);
+        if (fn.endsWith(".coffee")
+                || (fn.endsWith(".js") && this.jsM_.isMinimizeEnabled() && !file.relativePath()
+                        .startsWith(this.cacheUrlPath_()))) {
+            return this.processStatic_(file, request, response, ResourceType.JS);
         }
-        if ((fn.endsWith("css") || fn.endsWith("less")) && cssM_.isMinimizeEnabled() && !file.relativePath().startsWith(cacheUrlPath_())) {
-            return processStatic_(file, request, response, ResourceType.CSS);
+        if ((fn.endsWith("css") || fn.endsWith("less")) && this.cssM_.isMinimizeEnabled()
+                && !file.relativePath().startsWith(this.cacheUrlPath_())) {
+            return this.processStatic_(file, request, response, ResourceType.CSS);
         }
 
         if (fn.endsWith(".css") || fn.endsWith(".js")) {
@@ -336,7 +350,7 @@ public class GreenScriptPlugin extends PlayPlugin {
                 if ("GET".equalsIgnoreCase(request.method)) {
                     response.status = Http.StatusCode.NOT_MODIFIED;
                     response.cacheFor(etag, "100d", l);
-                    keepFlash_();
+                    this.keepFlash_();
                     return true;
                 }
             }
@@ -345,68 +359,71 @@ public class GreenScriptPlugin extends PlayPlugin {
         return false;
     }
 
-//    private static final Pattern P_IMPORT = Pattern.compile(".*@import\\s*\"(.*?)\".*");
-//    private Set<File> imports_(File file) {
-//        String key = "less_imports_" + file.getPath() + file.lastModified();
-//
-//        @SuppressWarnings("unchecked")
-//        Set<File> files = Cache.get(key, Set.class);
-//        if (null == files) {
-//            files = new HashSet<File>();
-//            try {
-//                List<String> lines = IO.readLines(file);
-//                for (String line: lines) {
-//                    Matcher m = P_IMPORT.matcher(line);
-//                    while (m.find()) {
-//                        File f = new File(file.getParentFile(), m.group(1));
-//                        files.add(f);
-//                        files.addAll(imports_(f));
-//                    }
-//                }
-//            } catch (Exception e) {
-//                Logger.error(e, "Error occurred getting @imports from resource: $s", file);
-//            }
-//        }
-//        return files;
-//    }
+    // private static final Pattern P_IMPORT =
+    // Pattern.compile(".*@import\\s*\"(.*?)\".*");
+    // private Set<File> imports_(File file) {
+    // String key = "less_imports_" + file.getPath() + file.lastModified();
+    //
+    // @SuppressWarnings("unchecked")
+    // Set<File> files = Cache.get(key, Set.class);
+    // if (null == files) {
+    // files = new HashSet<File>();
+    // try {
+    // List<String> lines = IO.readLines(file);
+    // for (String line: lines) {
+    // Matcher m = P_IMPORT.matcher(line);
+    // while (m.find()) {
+    // File f = new File(file.getParentFile(), m.group(1));
+    // files.add(f);
+    // files.addAll(imports_(f));
+    // }
+    // }
+    // } catch (Exception e) {
+    // Logger.error(e, "Error occurred getting @imports from resource: $s",
+    // file);
+    // }
+    // }
+    // return files;
+    // }
 
-//    private long lastModified_(VirtualFile file, ResourceType type) {
-//        long l = file.lastModified();
-//        if (ResourceType.CSS == type) {
-//            // try to get last modified of all @imported files
-//            for (File f: imports_(file.getRealFile())) {
-//                l = Math.max(l, f.lastModified());
-//            }
-//        }
-//        return l;
-//    }
+    // private long lastModified_(VirtualFile file, ResourceType type) {
+    // long l = file.lastModified();
+    // if (ResourceType.CSS == type) {
+    // // try to get last modified of all @imported files
+    // for (File f: imports_(file.getRealFile())) {
+    // l = Math.max(l, f.lastModified());
+    // }
+    // }
+    // return l;
+    // }
 
     private void keepFlash_() {
         Flash f = Flash.current();
-        if (f != null) f.keep();
+        if (f != null) {
+            f.keep();
+        }
     }
 
-    private boolean processStatic_(VirtualFile file, Request req, Response resp, ResourceType type) {
+    private boolean processStatic_(final VirtualFile file, final Request req, final Response resp,
+            final ResourceType type) {
         /*
-        IRenderSession sess = type == ResourceType.JS ? jsSession() : cssSession();
-        if (null != sess && sess.hasDeclared()) {
-            // do not service static if requesting to minimized files
-            return false;
-        }
-        */
+         * IRenderSession sess = type == ResourceType.JS ? jsSession() :
+         * cssSession(); if (null != sess && sess.hasDeclared()) { // do not
+         * service static if requesting to minimized files return false; }
+         */
         if (Play.mode == Mode.PROD) {
             resp.cacheFor("1h");
         }
-        IMinimizer min = type == ResourceType.CSS ? cssM_ : jsM_;
+        IMinimizer min = type == ResourceType.CSS ? this.cssM_ : this.jsM_;
         long l = min.getLastModified(file.getRealFile());
         final String etag = "\"" + l + "-" + file.hashCode() + "\"";
         if (!req.isModified(etag, l)) {
             if (req.method.equalsIgnoreCase("GET")) {
                 resp.status = Http.StatusCode.NOT_MODIFIED;
-                if (eTag_) {
+                if (this.eTag_) {
                     resp.setHeader(Names.ETAG, etag);
                 }
-                keepFlash_();
+                this.keepFlash_();
                 return true;
             } else {
                 return false;
@@ -418,11 +435,12 @@ public class GreenScriptPlugin extends PlayPlugin {
                 resp.contentType = type == ResourceType.JS ? "text/javascript" : "text/css";
                 resp.status = 200;
                 resp.print(content);
-                resp.setHeader(Names.LAST_MODIFIED, Utils.getHttpDateFormatter().format(new Date(l + 1000)));
-                if (eTag_) {
+                resp.setHeader(Names.LAST_MODIFIED,
+                        Utils.getHttpDateFormatter().format(new Date(l + 1000)));
+                if (this.eTag_) {
                     resp.setHeader(Names.ETAG, etag);
                 }
-                keepFlash_();
+                this.keepFlash_();
                 return true;
             } catch (Exception e) {
                 Logger.error(e, "error compress file %1$s", file.getName());
@@ -434,7 +452,7 @@ public class GreenScriptPlugin extends PlayPlugin {
     private HashMap<String, Long> currentConfigFiles() {
         HashMap<String, Long> files = new HashMap<String, Long>();
 
-        for(VirtualFile vf : Play.roots) {
+        for (VirtualFile vf : Play.roots) {
             VirtualFile conf = vf.child("conf/greenscript.conf");
             if (conf.exists()) {
                 files.put(conf.getRealFile().getAbsolutePath(), conf.getRealFile().lastModified());
@@ -444,14 +462,15 @@ public class GreenScriptPlugin extends PlayPlugin {
         return files;
     }
 
-    private boolean filesChanged(HashMap<String, Long> oldFiles,  HashMap<String, Long> newFiles) {
-        if(oldFiles.size() != newFiles.size()) {
+    private boolean filesChanged(final HashMap<String, Long> oldFiles,
+            final HashMap<String, Long> newFiles) {
+        if (oldFiles.size() != newFiles.size()) {
             return true;
         }
 
-        for(Entry<String, Long> entry : oldFiles.entrySet()) {
+        for (Entry<String, Long> entry : oldFiles.entrySet()) {
             Long newTime = newFiles.get(entry.getKey());
-            if(newTime == null || ! newTime.equals(entry.getValue())) {
+            if (newTime == null || !newTime.equals(entry.getValue())) {
                 return true;
             }
         }
@@ -461,11 +480,11 @@ public class GreenScriptPlugin extends PlayPlugin {
 
     @Override
     public void detectChange() {
-        if(Play.mode == Play.Mode.PROD) {
+        if (Play.mode == Play.Mode.PROD) {
             return;
         }
 
-        if(filesChanged(this.configFiles_, currentConfigFiles())) {
+        if (this.filesChanged(this.configFiles_, this.currentConfigFiles())) {
             Logger.debug("greenscript: config files changed, reloading dependencies");
             GreenScriptPlugin.reloadDependencies();
         }
@@ -473,15 +492,16 @@ public class GreenScriptPlugin extends PlayPlugin {
 
     public void loadDependencies() {
         Properties p = new Properties();
-        for (VirtualFile vf: Play.roots) {
+        for (VirtualFile vf : Play.roots) {
             VirtualFile conf = vf.child("conf/greenscript.conf");
             if (conf.exists()) {
-                //info_("loading dependency configuration from %1$s", conf.getRealFile().getAbsolutePath());
+                // info_("loading dependency configuration from %1$s",
+                // conf.getRealFile().getAbsolutePath());
                 try {
                     Properties p0 = new Properties();
                     p0.load(new BufferedInputStream(conf.inputstream()));
-                    for (String k: p0.stringPropertyNames()) {
-                        //info_("loading property: %s", k);
+                    for (String k : p0.stringPropertyNames()) {
+                        // info_("loading property: %s", k);
                         if (!p.containsKey(k)) {
                             info_("loading property for %s: %s", k, p0.get(k));
                             p.put(k, p0.get(k));
@@ -489,7 +509,8 @@ public class GreenScriptPlugin extends PlayPlugin {
                             String v = p.getProperty(k);
                             String v0 = p0.getProperty(k);
                             v = v + "," + v0;
-                            //info_("loading duplicate property for %s: %s", k, v);
+                            // info_("loading duplicate property for %s: %s", k,
+                            // v);
                             p.setProperty(k, v);
                         }
                     }
@@ -499,189 +520,201 @@ public class GreenScriptPlugin extends PlayPlugin {
             }
         }
         this.configFiles_ = this.currentConfigFiles();
-        //info_("greenscript.conf loaded: %s", p);
-        jsD_ = new DependenceManager(loadDepProp_(p, "js"));
-        cssD_ = new DependenceManager(loadDepProp_(p, "css"));
+        // info_("greenscript.conf loaded: %s", p);
+        this.jsD_ = new DependenceManager(this.loadDepProp_(p, "js"));
+        this.cssD_ = new DependenceManager(this.loadDepProp_(p, "css"));
 
-        depConf_ = p;
+        this.depConf_ = p;
         info_("dependency loaded");
     }
 
     public void InitializeMinimizers() {
         Properties p = Play.configuration;
 
-        for (String key: p.stringPropertyNames()) {
+        for (String key : p.stringPropertyNames()) {
             if (key.startsWith("greenscript.")) {
                 String v = p.getProperty(key);
-                minConf_.setProperty(key, p.getProperty(key));
+                this.minConf_.setProperty(key, p.getProperty(key));
                 trace_("[greenscript]set %1$s to %2$s", v, key);
             }
         }
 
-        jsM_ = initializeMinimizer_(minConf_, ResourceType.JS);
-        cssM_ = initializeMinimizer_(minConf_, ResourceType.CSS);
-
+        this.jsM_ = this.initializeMinimizer_(this.minConf_, ResourceType.JS);
+        this.cssM_ = this.initializeMinimizer_(this.minConf_, ResourceType.CSS);
 
         if (p.containsKey("greenscript.coffee.enabled")) {
-            System.setProperty("greenscript.coffee.enabled", p.getProperty("greenscript.coffee.enabled"));
+            System.setProperty("greenscript.coffee.enabled",
+                    p.getProperty("greenscript.coffee.enabled"));
         }
 
         if (p.containsKey("greenscript.less.enabled")) {
-        	System.setProperty("greenscript.less.enabled", p.getProperty("greenscript.less.enabled"));
+            System.setProperty("greenscript.less.enabled",
+                    p.getProperty("greenscript.less.enabled"));
         }
 
         info_("minimizer initialized");
     }
 
-    private IRenderSession newSession_(ResourceType type) {
-        return type == ResourceType.JS ?
-                new RenderSession(jsM_, jsD_, type) :
-                    new RenderSession(cssM_, cssD_, type);
+    private IRenderSession newSession_(final ResourceType type) {
+        return type == ResourceType.JS ? new RenderSession(this.jsM_, this.jsD_, type)
+                : new RenderSession(this.cssM_, this.cssD_, type);
     }
 
     public Properties getDependencyConfig() {
         Properties p = new Properties();
-        p.putAll(depConf_);
+        p.putAll(this.depConf_);
         return p;
     }
 
     public Properties getMinimizerConfig() {
         Properties p = new Properties();
-        p.putAll(minConf_);
+        p.putAll(this.minConf_);
         return p;
     }
 
-    private String join_(Collection<String> c) {
+    private String join_(final Collection<String> c) {
         boolean first = true;
         StringBuffer sb = new StringBuffer();
-        for (String s: c) {
-            if (!first) sb.append(",");
-            else first = false;
+        for (String s : c) {
+            if (!first) {
+                sb.append(",");
+            } else {
+                first = false;
+            }
             sb.append(s);
         }
         return sb.toString();
     }
 
-    private void mergeProperties_(Properties p, String k, String v){
-      String oldV = p.getProperty(k);
-      if (null == oldV) {
-          p.setProperty(k, v);
-      } else {
-          Set<String> oldS = new HashSet<String>();
-          oldS.addAll(Arrays.asList(oldV.split(IDependenceManager.SEPARATOR)));
-          Set<String> newS = new HashSet<String>();
-          newS.addAll(Arrays.asList(v.split(IDependenceManager.SEPARATOR)));
-          oldS.addAll(newS);
-          p.setProperty(k, join_(oldS));
-      }
+    private void mergeProperties_(final Properties p, final String k, final String v) {
+        String oldV = p.getProperty(k);
+        if (null == oldV) {
+            p.setProperty(k, v);
+        } else {
+            Set<String> oldS = new HashSet<String>();
+            oldS.addAll(Arrays.asList(oldV.split(IDependenceManager.SEPARATOR)));
+            Set<String> newS = new HashSet<String>();
+            newS.addAll(Arrays.asList(v.split(IDependenceManager.SEPARATOR)));
+            oldS.addAll(newS);
+            p.setProperty(k, this.join_(oldS));
+        }
     }
 
     // type should be "js" or "css"
-    private Properties loadDepProp_(Properties p, String type) {
+    private Properties loadDepProp_(final Properties p, final String type) {
         Properties p0 = new Properties();
         String prefix = type + ".";
-        for (String k: p.stringPropertyNames()) {
+        for (String k : p.stringPropertyNames()) {
             if (k.startsWith(prefix)) {
                 String k0 = k.replace(prefix, "");
                 String v = p.getProperty(k);
                 if (k0.matches(".*\\s*\\-\\s*$")) {
                     // reverse dependency declaration
                     k0 = k0.replaceAll("\\s*\\-\\s*$", "");
-                    for (String s: v.replaceAll("\\s+", "").split(IDependenceManager.SEPARATOR)) {
-                        mergeProperties_(p0, s, k0);
+                    for (String s : v.replaceAll("\\s+", "").split(IDependenceManager.SEPARATOR)) {
+                        this.mergeProperties_(p0, s, k0);
                     }
                 } else {
-                    mergeProperties_(p0, k0, v);
+                    this.mergeProperties_(p0, k0, v);
                 }
                 trace_("Found one %1$s dependency: %2$s depends on '%3$s'", type, k0, v);
             }
         }
         return p0;
     }
+
     public static final String CACHE_KEY_BUFFER = "greenscript.buffer";
     protected boolean inMemoryCache = false;
     private static Map<String, String> resourceUrl_ = new HashMap<String, String>();
-    private void setResourceUrlPath_(String resourceUrlRoot, String resourceUrlPath, String ext){
+
+    private void setResourceUrlPath_(final String resourceUrlRoot, String resourceUrlPath,
+            final String ext) {
         String path = null, ctxPath = Play.ctxPath;
-        if (!resourceUrlPath.endsWith("/"))
+        if (!resourceUrlPath.endsWith("/")) {
             resourceUrlPath = resourceUrlPath + "/";
+        }
         if (resourceUrlPath.startsWith("/")) {
-            path = resourceUrlPath.startsWith(ctxPath) ? resourceUrlPath : ctxPath + resourceUrlPath;
+            path = resourceUrlPath.startsWith(ctxPath) ? resourceUrlPath : ctxPath
+                    + resourceUrlPath;
         } else {
             path = resourceUrlRoot + resourceUrlPath;
         }
         resourceUrl_.put(ext, path);
     }
+
     private String resourceUrlRoot_() {
-        Properties p = minConf_;
+        Properties p = this.minConf_;
         String urlRoot = fetchProp_(p, "greenscript.url.root");
-        if (!urlRoot.startsWith("/"))
+        if (!urlRoot.startsWith("/")) {
             throw new IllegalArgumentException("url root must start with /");
+        }
         // checkInitialize_(false);
-        if (!urlRoot.endsWith("/"))
+        if (!urlRoot.endsWith("/")) {
             urlRoot = urlRoot + "/";
+        }
 
         return urlRoot.startsWith(Play.ctxPath) ? urlRoot : Play.ctxPath + urlRoot;
     }
+
     private String cacheUrlPath_() {
-        String resourceUrlRoot = resourceUrlRoot_();
+        String resourceUrlRoot = this.resourceUrlRoot_();
         if (null == resourceUrlRoot) {
             throw new IllegalStateException("resourceUrlRoot must be initiated first");
         }
         Properties p = Play.configuration;
         String urlPath = fetchProp_(p, "greenscript.url.minimized"), ctxPath = Play.ctxPath;
-        if (!urlPath.endsWith("/"))
+        if (!urlPath.endsWith("/")) {
             urlPath = urlPath + "/";
+        }
         if (urlPath.startsWith("/")) {
             return urlPath.startsWith(ctxPath) ? urlPath : ctxPath + urlPath;
         } else {
             return resourceUrlRoot + urlPath;
         }
     }
-    private Minimizer initializeMinimizer_(Properties p, ResourceType type) {
+
+    private Minimizer initializeMinimizer_(final Properties p, final ResourceType type) {
         final Minimizer m = new Minimizer(type);
-        m.setFileLocator(new IFileLocator(){
-            @Override
-            public File locate(String path) {
+        m.setFileLocator(new IFileLocator() {
+            public File locate(final String path) {
                 VirtualFile vf = VirtualFile.search(Play.roots, path);
                 return vf == null ? null : vf.getRealFile();
             }
         });
-        m.setBufferLocator(bufferLocator_);
+        m.setBufferLocator(this.bufferLocator_);
 
-        boolean routerMapping = getBooleanProp_(p, "greenscript.router.mapping", false);
+        boolean routerMapping = this.getBooleanProp_(p, "greenscript.router.mapping", false);
 
         if (routerMapping) {
-	        m.setRouteMapper(new IRouteMapper() {
-				@Override
-				public String reverse(String fileName) {
-					try {
-						String url = Router.reverseWithCheck(fileName, Play.getVirtualFile(fileName), false);
-						if (fileName.endsWith("/") && !url.endsWith("/")) {
-							url = url + "/";
-						}
-						return url;
-					} catch (NoRouteFoundException e) {
-						return fileName;
-					}
-				}
+            m.setRouteMapper(new IRouteMapper() {
+                public String reverse(final String fileName) {
+                    try {
+                        String url = Router.reverseWithCheck(fileName,
+                                Play.getVirtualFile(fileName), false);
+                        if (fileName.endsWith("/") && !url.endsWith("/")) {
+                            url = url + "/";
+                        }
+                        return url;
+                    } catch (NoRouteFoundException e) {
+                        return fileName;
+                    }
+                }
 
-				@Override
-				public String route(String url) {
-					try {
-						Map<String, String> args = Router.route("GET", url);
-						return args.get("action");
-					} catch (RenderStatic rs) {
-						String fileName = rs.file;
-						if (url.startsWith("/") && !fileName.startsWith("/")) {
-							fileName = "/" + fileName;
-						}
-						return fileName;
-					} catch (NotFound ex) {
-						return url;
-					}
-				}
-			});
+                public String route(final String url) {
+                    try {
+                        Map<String, String> args = Router.route("GET", url);
+                        return args.get("action");
+                    } catch (RenderStatic rs) {
+                        String fileName = rs.file;
+                        if (url.startsWith("/") && !fileName.startsWith("/")) {
+                            fileName = "/" + fileName;
+                        }
+                        return fileName;
+                    } catch (NotFound ex) {
+                        return url;
+                    }
+                }
+            });
         }
 
         String ext = type.getExtension();
@@ -689,10 +722,10 @@ public class GreenScriptPlugin extends PlayPlugin {
         String resourceDir = fetchProp_(p, "greenscript.dir" + ext);
         String cacheDir = fetchProp_(p, "greenscript.dir.minimized");
 
-        String urlRoot = resourceUrlRoot_();
+        String urlRoot = this.resourceUrlRoot_();
         String resourceUrl = fetchProp_(p, "greenscript.url" + ext);
-        String cacheUrl = cacheUrlPath_();
-        setResourceUrlPath_(urlRoot, resourceUrl, ext);
+        String cacheUrl = this.cacheUrlPath_();
+        this.setResourceUrlPath_(urlRoot, resourceUrl, ext);
 
         m.setUrlContextPath(Play.ctxPath);
         m.setResourceUrlRoot(urlRoot);
@@ -702,80 +735,85 @@ public class GreenScriptPlugin extends PlayPlugin {
         m.setCacheDir(Play.getFile(cacheDir));
         m.setResourceDir(resourceDir);
 
-        boolean resourcesParameter = getBooleanProp_(p, "greenscript.resources.param.enabled", false);
+        boolean resourcesParameter = this.getBooleanProp_(p, "greenscript.resources.param.enabled",
+                false);
         m.setResourcesParam(resourcesParameter ? RESOURCES_PARAM : null);
 
-        boolean minimize = getBooleanProp_(p, "greenscript.minimize", Play.mode == Mode.PROD);
-        boolean compress = getBooleanProp_(p, "greenscript.compress", true);
-        boolean cache = getBooleanProp_(p, "greenscript.cache", true);
-        inMemoryCache = getBooleanProp_(p, "greenscript.cache.inmemory", false);
-        boolean processInline = getBooleanProp_(p, "greenscript.inline.process", false);
-        System.setProperty("greenscript.lessCompile.postMerge", fetchProp_(p, "greenscript.lessCompile.postMerge"));
+        boolean minimize = this.getBooleanProp_(p, "greenscript.minimize", Play.mode == Mode.PROD);
+        boolean compress = this.getBooleanProp_(p, "greenscript.compress", true);
+        boolean cache = this.getBooleanProp_(p, "greenscript.cache", true);
+        this.inMemoryCache = this.getBooleanProp_(p, "greenscript.cache.inmemory", false);
+        boolean processInline = this.getBooleanProp_(p, "greenscript.inline.process", false);
+        System.setProperty("greenscript.lessCompile.postMerge",
+                fetchProp_(p, "greenscript.lessCompile.postMerge"));
 
         m.enableDisableMinimize(minimize);
         m.enableDisableCompress(compress);
         m.enableDisableCache(cache);
-        m.enableDisableInMemoryCache(inMemoryCache);
+        m.enableDisableInMemoryCache(this.inMemoryCache);
         m.enableDisableProcessInline(processInline);
 
         trace_("minimizer for %1$s loaded", type.name());
         return m;
     }
 
-    public String getInMemoryFileContent(String key, String resourceNames) {
-        IResource resource = bufferLocator_.locate(key);
+    public String getInMemoryFileContent(final String key, final String resourceNames) {
+        IResource resource = this.bufferLocator_.locate(key);
 
         if (resource == null && resourceNames != null) {
-        	Minimizer minimizer = null;
-        	// Select the minimizer.
-        	if (key.endsWith(".js")) {
-        		minimizer = jsM_;
-        	} else if (key.endsWith(".css")) {
-        		minimizer = cssM_;
-        	}
+            Minimizer minimizer = null;
+            // Select the minimizer.
+            if (key.endsWith(".js")) {
+                minimizer = this.jsM_;
+            } else if (key.endsWith(".css")) {
+                minimizer = this.cssM_;
+            }
 
-        	resource = minimizer.minimize(resourceNames);
+            resource = minimizer.minimize(resourceNames);
         }
 
         return null == resource ? null : resource.toString();
     }
 
     private IBufferLocator bufferLocator_ = new IBufferLocator() {
-        private String key_(String key) {
+        private String key_(final String key) {
             return String.format("%s.%s", CACHE_KEY_BUFFER, key);
         }
-        @Override
-        public BufferResource locate(String key) {
-            return Cache.get(key_(key), BufferResource.class);
+
+        public BufferResource locate(final String key) {
+            return Cache.get(this.key_(key), BufferResource.class);
         }
-        @Override
-        public BufferResource newBuffer(List<String> resourceNames, String extension) {
-        	StringBuilder builder = new StringBuilder();
-        	for (String resourceName : resourceNames) {
-        		builder.append(resourceName);
-			}
 
-            String key = UUID.nameUUIDFromBytes(builder.toString().getBytes()).toString() + extension;
+        public BufferResource newBuffer(final List<String> resourceNames, final String extension) {
+            StringBuilder builder = new StringBuilder();
+            for (String resourceName : resourceNames) {
+                builder.append(resourceName);
+            }
 
-            Logger.trace("Created key '%s' from resources '%s' and extension '%s'", key, builder.toString(), extension);
+            String key = UUID.nameUUIDFromBytes(builder.toString().getBytes()).toString()
+                    + extension;
+
+            Logger.info("Created key '%s' from resources '%s' and extension '%s'", key,
+                    builder.toString(), extension);
 
             BufferResource buffer = new BufferResource(key);
-            Cache.set(key_(key), buffer);
+            Cache.set(this.key_(key), buffer);
             return buffer;
         }
     };
 
-    private static String fetchProp_(Properties p, String key) {
+    private static String fetchProp_(final Properties p, final String key) {
         String val = p.getProperty(key);
-        if (null == val) val = defProps_.getProperty(key);
+        if (null == val) {
+            val = defProps_.getProperty(key);
+        }
         return val;
     }
 
-    private boolean getBooleanProp_(Properties p, String key, boolean def) {
+    private boolean getBooleanProp_(final Properties p, final String key, final boolean def) {
         try {
             String s = p.containsKey(key) ? p.getProperty(key)
-                    : defProps_.containsKey(key) ? defProps_.getProperty(key)
-                            : String.valueOf(def);
+                    : defProps_.containsKey(key) ? defProps_.getProperty(key) : String.valueOf(def);
 
             p.setProperty(key, s);
             return Boolean.parseBoolean(s);
@@ -785,23 +823,30 @@ public class GreenScriptPlugin extends PlayPlugin {
         }
     }
 
-//    private File getDir_(String dir) {
-//        return Play.getFile(dir);
-//    }
+    // private File getDir_(String dir) {
+    // return Play.getFile(dir);
+    // }
 
     private void cleanUp_() {
-        if (null != jsM_) jsM_.clearCache();
-        if (null != cssM_) cssM_.clearCache();
+        if (null != this.jsM_) {
+            this.jsM_.clearCache();
+        }
+        if (null != this.cssM_) {
+            this.cssM_.clearCache();
+        }
     }
 
     public static GreenScriptPlugin getInstance() {
-        for (PlayPlugin pp: Play.pluginCollection.getEnabledPlugins()) {
-            if (pp instanceof GreenScriptPlugin) return (GreenScriptPlugin)pp;
+        for (PlayPlugin pp : Play.pluginCollection.getEnabledPlugins()) {
+            if (pp instanceof GreenScriptPlugin) {
+                return (GreenScriptPlugin) pp;
+            }
         }
         return null;
     }
 
-    public static void updateMinimizer(boolean minimize, boolean compress, boolean cache, boolean inMemoryCache) {
+    public static void updateMinimizer(final boolean minimize, final boolean compress,
+            final boolean cache, final boolean inMemoryCache) {
         GreenScriptPlugin gs = getInstance();
         gs.jsM_.enableDisableMinimize(minimize);
         gs.jsM_.enableDisableCompress(compress);
@@ -822,21 +867,21 @@ public class GreenScriptPlugin extends PlayPlugin {
         gs.minConf_.setProperty("greenscript.cache.inmemory", String.valueOf(inMemoryCache));
     }
 
-    public static void enableDisableMinimize(boolean minimize) {
+    public static void enableDisableMinimize(final boolean minimize) {
         GreenScriptPlugin gs = getInstance();
         gs.jsM_.enableDisableMinimize(minimize);
         gs.minConf_.setProperty("greenscript.minimize", String.valueOf(minimize));
         info_("minimize %s", minimize ? "enabled" : "disabled");
     }
 
-    public static void enableDisableCompress(boolean compress) {
+    public static void enableDisableCompress(final boolean compress) {
         GreenScriptPlugin gs = getInstance();
         gs.jsM_.enableDisableCompress(compress);
         gs.minConf_.setProperty("greenscript.compress", String.valueOf(compress));
         info_("compress %s", compress ? "enabled" : "disabled");
     }
 
-    public static void enableDisableCache(boolean cache) {
+    public static void enableDisableCache(final boolean cache) {
         GreenScriptPlugin gs = getInstance();
         gs.jsM_.enableDisableCache(cache);
         gs.minConf_.setProperty("greenscript.cache", String.valueOf(cache));
@@ -849,22 +894,20 @@ public class GreenScriptPlugin extends PlayPlugin {
         info_("dependency reloaded");
     }
 
-    public static String lessImport(String fns) {
+    public static String lessImport(final String fns) {
         GreenScriptPlugin gs = getInstance();
         Properties p = gs.minConf_;
         String rootDir = fetchProp_(p, "greenscript.dir.root");
         String resourceDir = fetchProp_(p, "greenscript.dir.css");
         StringBuilder sb = new StringBuilder();
         String[] sa = fns.split("[ ,;]");
-        for (String fn: sa) {
+        for (String fn : sa) {
             fn = fn.endsWith(".css") ? fn : fn + ".css";
             String path;
             if (fn.startsWith("/")) {
-                path = (!fn.startsWith(rootDir)) ? rootDir
-                        + fn.replaceFirst("/", "") : fn;
+                path = (!fn.startsWith(rootDir)) ? rootDir + fn.replaceFirst("/", "") : fn;
             } else {
-                path = rootDir + File.separator + resourceDir + File.separator
-                        + fn;
+                path = rootDir + File.separator + resourceDir + File.separator + fn;
             }
             VirtualFile vf = VirtualFile.search(Play.roots, path);
             if (null != vf) {

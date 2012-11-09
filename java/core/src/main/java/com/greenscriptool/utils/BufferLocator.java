@@ -7,14 +7,14 @@ import java.util.UUID;
 
 public class BufferLocator implements IBufferLocator {
     Map<String, BufferResource> buffers = new HashMap<String, BufferResource>();
-    
+
     @Override
-    public BufferResource locate(String key) {
+    public BufferResource locate(final String key) {
         return this.buffers.get(key);
     }
-    
+
     @Override
-    public BufferResource newBuffer(List<String> resourceNames, String extension) {
+    public BufferResource newBuffer(final List<String> resourceNames, final String extension) {
         String key = UUID.randomUUID().toString() + extension;
         BufferResource buffer = new BufferResource(key);
         this.buffers.put(key, buffer);

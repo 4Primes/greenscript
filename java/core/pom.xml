@@ -9,7 +9,7 @@
     <groupId>com.github.greenlaw110.greenscript</groupId>
     <artifactId>greenscript-core</artifactId>
     <packaging>jar</packaging>
-    <version>1.2.8b</version>
+    <version>1.2.9</version>
 
     <name>GreenScript Core</name>
     <description>A Java package to manage and process Web Resources (Javascript/CSS)</description>
@@ -133,8 +133,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>2.0.2</version>
                 <configuration>
-                    <source>1.5</source>
-                    <target>1.5</target>
+                    <source>1.6</source>
+                    <target>1.6</target>
                 </configuration>
             </plugin>
             <plugin>
