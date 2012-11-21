@@ -83,7 +83,8 @@
         <dependency>
             <groupId>com.google.javascript</groupId>
             <artifactId>closure-compiler</artifactId>
-            <version>r1741</version>
+            <scope>provided</scope>
+            <version>r2180</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.googlecode.jarjar</groupId>
