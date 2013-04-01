@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project 
-    xmlns="http://maven.apache.org/POM/4.0.0" 
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+<project
+    xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    
+
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.github.greenlaw110.greenscript</groupId>
@@ -14,12 +14,12 @@
     <name>GreenScript Core</name>
     <description>A Java package to manage and process Web Resources (Javascript/CSS)</description>
     <url>http://github.com/greenlaw110/greenscript</url>
-    
+
     <scm>
         <url>http://github.com/greenlaw110/greenscript</url>
         <connection>scm:git:git://github.com/greenlaw110/greenscript.git</connection>
     </scm>
-    
+
     <licenses>
         <license>
             <name>The Apache Software License, Version 2.0</name>
@@ -27,8 +27,8 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
-    
-    <repositories>  
+
+    <repositories>
         <repository>
             <id>com.google.code.maven-play-plugin</id>
             <name>Maven Play Plugin - releases</name>
@@ -37,18 +37,18 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
-        <repository>  
-            <id>com.asual.maven.public</id>  
-            <name>Asual Public Repository</name>  
-            <url>http://www.asual.com/maven/content/groups/public</url>  
-        </repository>  
+        <repository>
+            <id>com.asual.maven.public</id>
+            <name>Asual Public Repository</name>
+            <url>http://www.asual.com/maven/content/groups/public</url>
+        </repository>
     </repositories>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
-    
+
     <dependencies>
         <dependency>
             <groupId>com.asual.lesscss</groupId>
@@ -84,7 +84,7 @@
             <groupId>com.google.javascript</groupId>
             <artifactId>closure-compiler</artifactId>
             <scope>provided</scope>
-            <version>r2180</version>
+            <version>r2388</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.googlecode.jarjar</groupId>
@@ -126,7 +126,7 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-    
+
     <build>
         <plugins>
             <plugin>
@@ -170,5 +170,5 @@
             </plugin>
         </plugins>
     </build>
-    
+
 </project>
