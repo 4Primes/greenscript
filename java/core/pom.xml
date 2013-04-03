@@ -84,7 +84,7 @@
             <groupId>com.google.javascript</groupId>
             <artifactId>closure-compiler</artifactId>
             <scope>provided</scope>
-            <version>r2079</version>
+            <version>v20130227</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.googlecode.jarjar</groupId>
