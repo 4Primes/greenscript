@@ -56,7 +56,7 @@ import com.greenscriptool.utils.IBufferLocator;
 
 /**
  * Define a Playframework plugin
- *
+ * 
  * @author greenlaw110@gmail.com
  * @version 1.2.9 2012-06-05 fix bug:
  *          https://github.com/greenlaw110/greenscript/issues/50 Support
@@ -163,6 +163,13 @@ public class GreenScriptPlugin extends PlayPlugin {
 
     @Override
     public void onConfigurationRead() {
+
+        this.loadDependencies();
+
+        this.eTag_ = Play.configuration.getProperty("http.useETag", "true")
+                .equalsIgnoreCase("true");
+
+        info_("initialized");
     }
 
     private boolean stopRouteUpdate_ = false;
@@ -197,14 +204,6 @@ public class GreenScriptPlugin extends PlayPlugin {
 
     @Override
     public void afterApplicationStart() {
-
-        this.loadDependencies();
-
-        this.eTag_ = Play.configuration.getProperty("http.useETag", "true")
-                .equalsIgnoreCase("true");
-
-        info_("initialized");
-
         Properties p = Play.configuration;
         for (ResourceType type : ResourceType.values()) {
             final Minimizer m = type == ResourceType.JS ? this.jsM_ : this.cssM_;
