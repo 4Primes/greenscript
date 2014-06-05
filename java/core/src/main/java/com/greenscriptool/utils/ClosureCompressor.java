@@ -18,7 +18,6 @@ import com.greenscriptool.ResourceType;
  */
 public class ClosureCompressor implements ICompressor {
 
-    CompilerOptions options = new CompilerOptions();
     private List<JSSourceFile> externalJavascriptFiles = new ArrayList<JSSourceFile>();
 
     public ClosureCompressor(final ResourceType type) {
@@ -26,7 +25,6 @@ public class ClosureCompressor implements ICompressor {
             throw new IllegalArgumentException("ClosureCompressor does not support CSS compression");
         }
         com.google.javascript.jscomp.Compiler.setLoggingLevel(Level.FINE);
-        CompilationLevel.SIMPLE_OPTIMIZATIONS.setOptionsForCompilationLevel(this.options);
     }
 
     @Override
@@ -36,7 +34,10 @@ public class ClosureCompressor implements ICompressor {
                 .fromInputStream("greenscript.js", new ReaderInputStream(r));
         List<JSSourceFile> files = new ArrayList<JSSourceFile>();
         files.add(file);
-        Result result = compiler.compile(this.externalJavascriptFiles, files, this.options);
+        System.out.println("!!!--Compressing--!!!");
+        CompilerOptions options = new CompilerOptions();
+        CompilationLevel.SIMPLE_OPTIMIZATIONS.setOptionsForCompilationLevel(options);
+        Result result = compiler.compile(this.externalJavascriptFiles, files, options);
         if (result.success) {
             w.write(compiler.toSource());
         } else {
